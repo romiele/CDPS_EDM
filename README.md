@@ -1,3 +1,4 @@
+![Alt text](CDPS_EDM/inversion_animation.gif)
 
 UPDATE 24/04/2025 - 
 Attention: This code is still in a preliminary version and few files are missing!
