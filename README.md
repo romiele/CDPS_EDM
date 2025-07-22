@@ -5,7 +5,7 @@ The main file, CDPS_inversion.py is to be used, fill in the parameters within th
 Wether you need any support or question, contact me at roberto.miele@unil.ch , I'll be happy to help.
 
 Examples of inversion with CDPS
-![Demo]([CDPS_EDM/inversion_animation.gif](https://github.com/romiele/CDPS_EDM/blob/main/inversion_animation.gif))
+![Demo]([/inversion_animation.gif))
 
 
 
