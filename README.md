@@ -1,4 +1,4 @@
-This repository contains the CDPS for score-based EDM model (Karras et al. 2025), proposed in https://arxiv.org/abs/2507.15809. 
+This repository contains the CDPS for score-based diffusion models from "Diffusion models for multivariate subsurface generation and efficient probabilistic inversion", https://arxiv.org/abs/2507.15809. 
 The code is ready to work with the data in "Test models", for conditioning using Well logs and Seismic data. 
 The main file, CDPS_inversion.py is to be used, fill in the parameters within this file and run for inversion. 
 
