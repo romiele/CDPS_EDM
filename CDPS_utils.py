@@ -13,7 +13,7 @@ import zipfile
 import PIL.Image
 import json
 import torch
-# import dnnlib
+from tqdm import tqdm
 
 # try:
 #     import pyspng
@@ -256,6 +256,7 @@ class ImageFolderDataset(Dataset):
         labels = labels.astype({1: np.int64, 2: np.float32}[labels.ndim])
         return labels
 
+
 #Datasetobj that loads facies and Ip distributions
 class FaciesSet(Dataset):
 
@@ -351,3 +352,42 @@ class FaciesSet(Dataset):
             
             return out, out_dict
 #----------------------------------------------------------------------------
+
+def compute_estimation_error(CDPS, test_data):
+    # define the estimation errors at each timestep, individually from a set of test data
+    try: 
+        CDPS.sigma_xhat0 = torch.load(CDPS.work_dir+f'/xhat0_sigma_{CDPS.sigma_max}_{CDPS.rho}_{CDPS.num_steps}.pt', weights_only=True, map_location=CDPS.device)
+    except: 
+        N_ex = test_data.shape[0]
+        div = 4 if N_ex > 4 else 1
+        bs = int(N_ex/div) #batch size
+        CDPS.sigma_xhat0=torch.zeros(CDPS.num_steps+1, test_data.shape[1]).to(CDPS.device)
+        
+        # define the sigma sampling schedule 
+        # Adjust noise levels based on what's supported by the CDPS.
+        sigma_min = max(CDPS.sigma_min, CDPS.net.sigma_min)
+        sigma_max = min(CDPS.sigma_max, CDPS.net.sigma_max)
+        
+        # Time step discretization.
+        step_indices = torch.arange(CDPS.num_steps, dtype=torch.float64, device=CDPS.device)
+        t_steps = (sigma_max ** (1 / CDPS.rho) + step_indices / (CDPS.num_steps - 1) * (sigma_min ** (1 / CDPS.rho) - sigma_max ** (1 / CDPS.rho))) ** CDPS.rho
+        
+        for i in tqdm(range(len(t_steps)), desc= 'Error at time-step'):
+            #error vectors
+            err_y = torch.randn_like(test_data).to(CDPS.device)*t_steps[i]
+            residuals = torch.zeros_like(test_data)
+            #estimate x_0 at specific error
+            D_yn = torch.zeros_like(test_data)
+            for j in range(div):
+                D_yn[j*bs:j*bs+bs] = CDPS.net(test_data[j*bs:j*bs+bs] + err_y[j*bs:j*bs+bs], t_steps[i], None)
+                residuals[j*bs:j*bs+bs] = (test_data[j*bs:j*bs+bs]-D_yn[j*bs:j*bs+bs])
+            if j*bs+bs != N_ex:
+                D_yn[j*bs+bs:] = CDPS.net(test_data[j*bs+bs:] + err_y[j*bs+bs:], t_steps[i], None)
+                residuals[j*bs+bs:] = (test_data[j*bs+bs:]-D_yn[j*bs+bs:])
+
+            #compute the residual for different images at noise level t
+            mean_err_pixel = torch.sqrt(torch.mean((residuals.flatten(2)/2)**2, dim=0))
+            CDPS.sigma_xhat0[i,:] = torch.quantile(mean_err_pixel.flatten(1), q=0.5, dim=1)
+        torch.save(CDPS.sigma_xhat0, CDPS.work_dir+f'/xhat0_sigma_{CDPS.sigma_max}_{CDPS.rho}_{CDPS.num_steps}.pt')
+
+    return CDPS
