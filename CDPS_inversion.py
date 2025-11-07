@@ -244,7 +244,7 @@ class CDPS_Inversion():
                 J_trace = (self.conv_jacobian @ JRC_struct)[:-1, self.len_wav//2:-self.len_wav//2].double()
             
                 #Full covariance matrix = Error propagation + observed data error
-                cov = torch.matmul(J_trace.T, torch.matmul(temp_eye, J_trace))
+                cov = torch.matmul(J_trace, torch.matmul(temp_eye, J_trace.T))
                 cov += torch.diag(self.var_ys[0,0,:,t]).to(self.device)
                 
                 inv_cov[t]  = torch.inverse(cov) 
