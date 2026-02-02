@@ -353,10 +353,10 @@ class CDPS_Inversion():
                     denoised.detach_(); x_hat.detach_(); x_next.detach_(); torch.cuda.empty_cache()
                     
                     #compute next step (2nd order)
-                    score_func = (denoised-x_hat)/(t_hat**2)
-                    d_prime = - t_hat * (score_func + cond_grads)
+                    score_func = (denoised-x_next)/(t_next**2)
+                    d_prime = - t_next * (score_func + cond_grads)                
                     x_next = x_hat + (t_next - t_hat) * (0.5 * d_cur + 0.5 * d_prime)
-    
+
             pbar.set_postfix({'WRMSE': wrmse}, refresh=False)
         
             #store rmse for logging progress
